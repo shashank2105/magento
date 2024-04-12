@@ -1,0 +1,194 @@
+## To install and confiure docker on ubuntu
+
+sudo apt-get update
+
+sudo apt install curl
+
+curl -fsSL https://get.docker.com -o get-docker.sh
+
+sudo sh get-docker.sh
+
+sudo curl -L https://github.com/docker/compose/releases/download/1.29.2/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+
+sudo chmod +x /usr/local/bin/docker-compose
+
+docker-compose --version
+
+sudo snap install docker
+
+docker -v
+
+## Docker help link:
+
+https://hub.docker.com/_/mariadb/
+https://hub.docker.com/_/mysql
+https://hub.docker.com/_/nginx
+https://hub.docker.com/_/elasticsearch
+https://hub.docker.com/_/php
+
+## Magento 2.4.x platform required
+
+Magento	2.4.3
+Composer 2.x
+Elasticsearch 7.9
+MariaDB	10.4
+MySQL 8.0
+
+## Stop/Start local Services
+
+sudo systemctl disable apache2 && sudo systemctl stop apache2
+sudo systemctl disable mysql && sudo systemctl stop mysql
+
+sudo systemctl enable apache2 && sudo systemctl start apache2
+sudo systemctl enable mysql && sudo systemctl start mysql
+
+## Create magento project using repo.magento.com:
+
+/usr/local/bin/composer create-project --repository-url=https://repo.magento.com/ magento/project-community-edition=2.4.3 .
+
+## Account user for magento.repo.com:
+
+Email: r####################
+
+M243:
+
+Public Key: **********************
+Private Key: ***********************
+
++++++
+
+
+##+--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++docker cli started+++++++++++++++++++++++++++++++++++++++++++++++++++++--+##
+## Create network
+sudo docker network create m234-net
+
+## Create Elasticsearch docker Image
+
+sudo docker run -d --name elasticsearch --net m234-net -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" elasticsearch:7.17.8
+
+## Create MySQL docker Image.
+sudo docker run --name m234DB -e MYSQL_ROOT_PASSWORD=rootp@01 -e MYSQL_DATABASE=m243 -e MYSQL_USER=m234dbuser -e MYSQL_PASSWORD=rootp@01 -p 3306:3306 --net=m234-net -v data_m234_db:/var/lib/mysql -d mysql:8.0
+
+
+## First Krypt key Magento 
+b09ad2ad315f3567064b5bbd2fcd4393
+
+
+## Build Magento docker Image
+
+sudo docker build \
+--network=m234-net \
+--build-arg WEB_HOST=http://m243.local \
+--build-arg WEB_NAME=m243.local \
+--build-arg DB_HOST=m234DB \
+--build-arg DB_NAME=m243 \
+--build-arg DB_USER=root \
+--build-arg DB_PASS=rootp@01 \
+--build-arg WEB_ADMIN_FIRSTNAME=admin \
+--build-arg WEB_ADMIN_LASTNAME=admin \
+--build-arg WEB_ADMIN_EMAIL=raju.mishra@gus.global \
+--build-arg WEB_ADMIN_USERNAME=admin \
+--build-arg WEB_ADMIN_PASSWORD=admin123 \
+--build-arg WEB_ADMIN_URI=admin_0007 \
+--build-arg WEB_CRYPT_KEY=b09ad2ad315f3567064b5bbd2fcd4393 \
+--build-arg WEB_BASE_CURRENCY=GBP \
+--build-arg WEB_TIMEZONE=Europe/London \
+--build-arg WEB_SEARCH_ENGINE=elasticsearch7 \
+--build-arg WEB_ELASTICSEARCH_HOST=elasticsearch \
+--build-arg WEB_ELASTICSEARCH_PORT=9200 \
+--build-arg ENV_TYPE=INITIAL \
+-t m243:1.0 .
+
+
+sudo docker build \
+--network=m234-net \
+--build-arg WEB_HOST=http://m243.local \
+--build-arg WEB_NAME=m243.local \
+--build-arg DB_HOST=m234DB \
+--build-arg DB_NAME=m243 \
+--build-arg DB_USER=root \
+--build-arg DB_PASS=rootp@01 \
+--build-arg WEB_ADMIN_FIRSTNAME=admin \
+--build-arg WEB_ADMIN_LASTNAME=admin \
+--build-arg WEB_ADMIN_EMAIL=raju.mishra@gus.global \
+--build-arg WEB_ADMIN_USERNAME=admin \
+--build-arg WEB_ADMIN_PASSWORD=admin123 \
+--build-arg WEB_ADMIN_URI=admin_0007 \
+--build-arg WEB_CRYPT_KEY=b09ad2ad315f3567064b5bbd2fcd4393 \
+--build-arg WEB_BASE_CURRENCY=GBP \
+--build-arg WEB_TIMEZONE=Europe/London \
+--build-arg WEB_SEARCH_ENGINE=elasticsearch7 \
+--build-arg WEB_ELASTICSEARCH_HOST=elasticsearch \
+--build-arg WEB_ELASTICSEARCH_PORT=9200 \
+--build-arg ENV_TYPE=DEV \
+-t m243:2.0 .
+
+
+## Do host entry on localhost
+sudo -- sh -c "echo '127.0.0.1 m243.local' >> /etc/hosts"
+
+
+## Up image with volume
+sudo docker run --name m243Web -p 80:80 --net=m234-net -v /home/Projects/m243/web/:/var/www/html -d m243:1.0
+
+
+## Up image without volume
+sudo docker run --name m243Web -p 80:80 --net=m234-net -d m243:1.0
+
+
+## Go to container
+sudo docker exec -it m243Web /bin/bash
+sudo docker exec -it m234DB /bin/bash
+
+
+## Update vendor
+COMPOSER_MEMORY_LIMIT=-1 composer install
+COMPOSER_MEMORY_LIMIT=-1 composer update
+
+
+## Magento commands
+php -d memory_limit=8G bin/magento s:up
+php -d memory_limit=8G bin/magento s:di:c
+php -d memory_limit=8G bin/magento s:s:d -f
+php -d memory_limit=8G bin/magento i:rei
+php -d memory_limit=8G bin/magento c:f
+chmod -R 777 generated/ pub/ var/
+
+
+
+## To enable all module:
+php -d memory_limit=8G bin/magento module:enable --all
+
+
+## Copy local file to docker Image location:
+sudo docker cp m234onlinedb.sql m243DB:/m234onlinedb.sql
+
+
+## Copy file from docker container to local location:
+sudo docker cp m243DB:/m234onlinedb.sql m234onlinedb.sql 
+
+sudo docker cp m234Web:/var/www/html/app/etc/env.php env.php 
+
+
+## list and remove volume
+docker volume ls
+docker volume rm volume_name volume_name
+
+
+## list and remove network
+docker network ls
+docker network rm network_name
+
+
+## Import DB
+mysql -h db -u lsbfdbuser -p lsbfxonlinedb < DB.sql
+
+
+## Magento core_config_data base url update for MySQL DB
+select * from core_config_data where path like '%base_url%';
+select * from core_config_data where value like '%lsbfsgecom-web-qa%';
+update core_config_data set value = 'http://m243.local/' where core_config_data.config_id = 4;
+
+
+## Magento upgrade help
+https://experienceleague.adobe.com/docs/commerce-operations/upgrade-guide/implementation/perform-upgrade.html
